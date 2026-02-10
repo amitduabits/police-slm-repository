@@ -234,3 +234,11 @@ dump.rdb
 *.tar.gz
 deployment_package/
 release/
+
+# Claude Code artifacts
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+
+# Debug/diagnostic scripts
+diagnose_*.py

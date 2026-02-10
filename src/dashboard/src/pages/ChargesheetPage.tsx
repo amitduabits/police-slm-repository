@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { chargesheetAPI } from '../lib/api';
-import { AlertCircle, FileCheck, Loader2 } from 'lucide-react';
+import {
+  AlertCircle,
+  FileCheck,
+  Loader2,
+  Upload,
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+} from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export default function ChargesheetPage() {
   const [chargesheetText, setChargesheetText] = useState('');
@@ -21,7 +30,6 @@ export default function ChargesheetPage() {
         case_number: caseNumber || undefined,
         top_k: 5,
       });
-
       setResult(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to review chargesheet');
@@ -30,101 +38,191 @@ export default function ChargesheetPage() {
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return { ring: 'text-emerald-400', bg: 'bg-emerald-500', label: 'Strong' };
+    if (score >= 60) return { ring: 'text-gold-400', bg: 'bg-gold-500', label: 'Fair' };
+    return { ring: 'text-red-400', bg: 'bg-red-500', label: 'Needs Work' };
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Chargesheet Review</h1>
-        <p className="text-gray-600 mt-2">
-          Review chargesheet completeness against successful similar cases
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="animate-fade-in">
+        <h1 className="text-2xl font-display font-bold text-white">
+          Chargesheet Review
+        </h1>
+        <p className="text-sm text-white/40 mt-0.5">
+          AI-powered completeness analysis against successful precedent cases
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Input form */}
+      <div className="glass rounded-2xl p-6 animate-slide-up">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
               Chargesheet Text
             </label>
             <textarea
               value={chargesheetText}
               onChange={(e) => setChargesheetText(e.target.value)}
               required
-              rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1B3A5C] focus:border-transparent outline-none resize-none"
-              placeholder="Paste chargesheet text here..."
+              rows={10}
+              className="input-dark font-mono text-sm resize-none"
+              placeholder="Paste the full chargesheet text here for AI analysis…"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Case Number (Optional)
-            </label>
-            <input
-              type="text"
-              value={caseNumber}
-              onChange={(e) => setCaseNumber(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1B3A5C] focus:border-transparent outline-none"
-              placeholder="e.g., CR-123/2024"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
+                Case Number
+              </label>
+              <input
+                type="text"
+                value={caseNumber}
+                onChange={(e) => setCaseNumber(e.target.value)}
+                className="input-dark"
+                placeholder="e.g., CR-445/2024"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={loading || !chargesheetText.trim()}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-3"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing…
+                  </>
+                ) : (
+                  <>
+                    <FileCheck className="w-4 h-4" />
+                    Review Chargesheet
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#1B3A5C] text-white py-3 rounded-lg font-medium hover:bg-[#0F2338] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Reviewing...
-              </>
-            ) : (
-              <>
-                <FileCheck className="w-5 h-5" />
-                Review Chargesheet
-              </>
-            )}
-          </button>
         </form>
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-red-900">Error</h3>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
-          </div>
+        <div className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-red-500/10 border border-red-500/15 animate-fade-in">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+          <p className="text-sm text-red-300">{error}</p>
         </div>
       )}
 
+      {/* Results */}
       {result && (
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Review Results</h2>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-[#1B3A5C]">
-                {result.completeness_score.toFixed(0)}
+        <div className="space-y-6 animate-slide-up">
+          {/* Score Card */}
+          <div className="glass rounded-2xl p-8">
+            <div className="flex flex-col sm:flex-row items-center gap-8">
+              {/* Circular Score */}
+              <div className="relative flex-shrink-0">
+                <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.05)"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(result.completeness_score / 100) * 327} 327`}
+                    className={cn(
+                      'transition-all duration-1000',
+                      getScoreColor(result.completeness_score).ring
+                    )}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-display font-bold text-white">
+                    {result.completeness_score.toFixed(0)}
+                  </span>
+                  <span className="text-xs text-white/40">/ 100</span>
+                </div>
               </div>
-              <div className="text-sm text-gray-600">Completeness Score</div>
+
+              {/* Score details */}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+                  <h2 className="text-xl font-display font-bold text-white">
+                    Completeness Score
+                  </h2>
+                  <span
+                    className={cn(
+                      'badge',
+                      result.completeness_score >= 80
+                        ? 'badge-green'
+                        : result.completeness_score >= 60
+                        ? 'badge-gold'
+                        : 'badge-red'
+                    )}
+                  >
+                    {getScoreColor(result.completeness_score).label}
+                  </span>
+                </div>
+                <p className="text-sm text-white/40 leading-relaxed max-w-lg">
+                  {result.completeness_score >= 80
+                    ? 'The chargesheet appears well-prepared with strong coverage of required elements.'
+                    : result.completeness_score >= 60
+                    ? 'Some areas need attention. Review the detailed analysis below.'
+                    : 'Significant gaps detected. Please address the issues identified below.'}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="prose max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">
-              {result.response}
-            </pre>
+          {/* Detailed Analysis */}
+          <div className="glass rounded-2xl p-6">
+            <h3 className="text-lg font-display font-semibold text-white/80 mb-4">
+              Detailed Analysis
+            </h3>
+            <div className="prose prose-invert max-w-none">
+              <pre className="whitespace-pre-wrap text-sm text-white/60 bg-surface-2/50 p-5 rounded-xl border border-white/5 font-mono leading-relaxed">
+                {result.response}
+              </pre>
+            </div>
           </div>
 
+          {/* Reference Cases */}
           {result.citations && result.citations.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <div className="glass rounded-2xl p-6">
+              <h3 className="text-lg font-display font-semibold text-white/80 mb-4 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-white/30" />
                 Reference Cases ({result.citations.length})
               </h3>
               <div className="space-y-2">
-                {result.citations.map((citation: any, index: number) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="font-medium text-gray-900">{citation.source}</p>
+                {result.citations.map((c: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.03] hover:bg-white/[0.04] transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-xs text-white/30 font-mono">
+                      {i + 1}
+                    </div>
+                    <span className="text-sm text-white/60 flex-1 truncate">
+                      {c.source}
+                    </span>
+                    {c.score && (
+                      <span className="badge-blue text-[10px]">
+                        {(c.score * 100).toFixed(0)}%
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
