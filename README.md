@@ -75,8 +75,6 @@ curl http://localhost:8000/utils/convert-section/302?from_code=IPC&to_code=BNS
 
 ```
 gujpol-slm/
-├── CLAUDE.md                   # Claude Code instructions
-├── .claude/settings.json       # Claude Code permissions
 ├── .env.example                # Environment template
 ├── pyproject.toml              # Python dependencies (Poetry)
 ├── docker-compose.yml          # All services

@@ -144,7 +144,7 @@ def ingest_ocr(input_dir, output_dir, batch_size, languages):
     click.echo(f"Running OCR on {input_dir} → {output_dir}")
     click.echo(f"Languages: {languages}, Batch: {batch_size}")
     # Actual implementation will import from src.ingestion.ocr_pipeline
-    click.echo("OCR pipeline will be initialized by Claude Code when run.")
+    click.echo("OCR pipeline will be initialized when run.")
 
 
 @ingest.command("parse")

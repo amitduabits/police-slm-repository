@@ -44,7 +44,7 @@ def test_rag_pipeline():
         return False
 
     try:
-        llm = create_llm_client(backend="claude")  # Use Claude for now
+        llm = create_llm_client(backend="mistral")  # Use local Mistral 7B
         print(f"   [OK] LLM client ready (backend: {llm.backend})")
 
         if not llm.health_check():
