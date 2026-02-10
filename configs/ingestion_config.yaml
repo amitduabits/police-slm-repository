@@ -1,0 +1,151 @@
+# Gujarat Police SLM - Ingestion Configuration
+
+# OCR Pipeline
+ocr:
+  primary_engine: "tesseract"
+  fallback_engine: "paddleocr"
+  languages: ["eng", "hin", "guj"]
+  confidence_threshold: 0.80
+  preprocessing:
+    deskew: true
+    denoise: true
+    binarize: true
+    remove_stamps: true
+    dpi: 300
+  batch_size: 50
+  max_concurrent: 2
+  output_format: "json"
+  flag_low_confidence: true
+
+# Document Parsers
+parsers:
+  fir:
+    fields:
+      - fir_number
+      - date
+      - time
+      - police_station
+      - district
+      - complainant_name
+      - complainant_address
+      - accused_details
+      - sections_cited
+      - incident_description
+      - incident_location
+      - evidence_mentioned
+    required_fields: ["fir_number", "date", "police_station", "sections_cited"]
+
+  chargesheet:
+    fields:
+      - case_number
+      - fir_reference
+      - accused_list
+      - witnesses_list
+      - evidence_inventory
+      - sections_charged
+      - investigation_officer
+      - investigation_chronology
+      - forensic_reports
+    required_fields: ["case_number", "fir_reference", "sections_charged"]
+
+  court_ruling:
+    fields:
+      - case_citation
+      - judge_name
+      - court_name
+      - charges_considered
+      - verdict
+      - key_reasoning
+      - sentences_imposed
+      - precedents_cited
+    required_fields: ["case_citation", "court_name", "verdict"]
+
+  panchnama:
+    fields:
+      - panchnama_number
+      - date
+      - time
+      - location
+      - panch_witnesses
+      - items_found
+      - description
+      - officer_name
+    required_fields: ["date", "location", "description"]
+
+# Data Cleaning
+cleaning:
+  normalize_sections: true
+  normalize_entities: true
+  normalize_dates: true
+  deduplicate: true
+  pii_handling: "tag_and_encrypt"
+  quality_flags:
+    min_ocr_confidence: 0.50
+    flag_missing_required: true
+    flag_date_inconsistencies: true
+
+# Chunking Strategy
+chunking:
+  default_chunk_size: 500  # tokens
+  chunk_overlap: 100  # tokens
+  respect_paragraphs: true
+  respect_sections: true
+  fir:
+    chunk_by: "section"
+    sections: ["complainant", "incident", "evidence", "accused"]
+  chargesheet:
+    chunk_by: "section"
+    sections: ["accused", "evidence", "witnesses", "investigation"]
+  court_ruling:
+    chunk_by: "paragraph"
+    keep_reasoning_large: true
+    max_chunk_size: 1000
+
+# Vector Store
+vector_store:
+  engine: "chromadb"
+  host: "localhost"
+  port: 8100
+  persist_directory: "data/embeddings/chroma"
+  collections:
+    - name: "firs"
+      document_type: "fir"
+    - name: "chargesheets"
+      document_type: "chargesheet"
+    - name: "court_rulings"
+      document_type: "court_ruling"
+    - name: "panchnamas"
+      document_type: "panchnama"
+    - name: "bare_acts"
+      document_type: "bare_act"
+    - name: "all_documents"
+      document_type: "all"
+
+# Data Sources
+data_sources:
+  scraper_delay_seconds: 2
+  max_concurrent_scrapers: 3
+  sources:
+    indian_kanoon:
+      enabled: true
+      priority: 1
+      max_results_per_query: 50
+    ecourts:
+      enabled: true
+      priority: 2
+      districts: ["ahmedabad", "surat", "vadodara", "rajkot", "gandhinagar"]
+    gujarat_hc:
+      enabled: true
+      priority: 3
+      max_per_combo: 50
+    supreme_court:
+      enabled: true
+      priority: 4
+      max_per_query: 30
+    india_code:
+      enabled: true
+      priority: 0  # Run first (section mappings)
+    ncrb:
+      enabled: true
+      priority: 5
+      years: ["2022", "2021", "2020"]

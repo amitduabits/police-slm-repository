@@ -1,0 +1,82 @@
+# Gujarat Police SLM - Model Configuration
+
+# Base Model
+base_model: "mistralai/Mistral-7B-Instruct-v0.3"
+model_type: "causal_lm"
+
+# Quantization (for inference)
+quantization:
+  method: "gguf"  # gguf for llama.cpp deployment
+  bits: 4
+  group_size: 128
+
+# QLoRA Fine-tuning
+qlora:
+  r: 64  # LoRA rank
+  alpha: 16  # LoRA alpha
+  dropout: 0.1
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Training
+training:
+  learning_rate: 2.0e-4
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  epochs: 3
+  max_seq_length: 2048
+  warmup_ratio: 0.03
+  weight_decay: 0.001
+  lr_scheduler: "cosine"
+  save_steps: 100
+  eval_steps: 50
+  logging_steps: 10
+  fp16: true
+  gradient_checkpointing: true
+  optim: "paged_adamw_32bit"
+
+# Training Data
+training_data:
+  instruction_pairs: "data/training/instruction_pairs.jsonl"
+  chargesheet_pairs: "data/training/chargesheet_pairs.jsonl"
+  legal_qa_pairs: "data/training/legal_qa_pairs.jsonl"
+  train_split: 0.90
+  val_split: 0.05
+  test_split: 0.05
+  min_pairs: 13000
+
+# Inference (llama.cpp)
+inference:
+  context_size: 4096
+  gpu_layers: 35  # Adjust based on VRAM
+  threads: 4
+  batch_size: 512
+  temperature: 0.1  # Low for factual responses
+  top_p: 0.9
+  top_k: 40
+  repeat_penalty: 1.1
+  max_tokens: 2048
+
+# Evaluation
+evaluation:
+  test_queries_per_language: 30
+  languages: ["en", "hi", "gu"]
+  benchmarks:
+    recall_at_5: 0.80
+    precision_at_5: 0.70
+    expert_rating_min: 3.5
+    hallucination_rate_max: 0.05
+    latency_max_seconds: 10
+
+# Embedding Model
+embedding:
+  model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  alternative: "BAAI/bge-m3"
+  device: "cpu"  # cpu or cuda
+  batch_size: 64
+  max_seq_length: 512

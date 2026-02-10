@@ -1,0 +1,40 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    tesseract-ocr \
+    tesseract-ocr-hin \
+    tesseract-ocr-guj \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install poetry && poetry config virtualenvs.create false
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+RUN poetry install --no-dev --no-interaction --no-ansi 2>/dev/null || pip install fastapi uvicorn sqlalchemy asyncpg redis chromadb sentence-transformers pydantic pydantic-settings python-jose passlib cryptography structlog
+
+# Copy application
+COPY src/ ./src/
+COPY configs/ ./configs/
+COPY alembic/ ./alembic/ 2>/dev/null || true
+COPY alembic.ini ./alembic.ini 2>/dev/null || true
+
+# Create non-root user
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
