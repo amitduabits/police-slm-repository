@@ -86,13 +86,18 @@ def chunk_text(
     current_sentences: List[str] = []
     current_word_count = 0
 
+    # Get source file for unique ID generation
+    source_file = metadata.get("file_path", "unknown") if metadata else "unknown"
+
     for sentence in sentences:
         word_count = len(sentence.split())
 
         # Create chunk when size limit reached
         if current_word_count + word_count > chunk_size and current_sentences:
             chunk_text_str = ' '.join(current_sentences)
-            chunk_id = hashlib.md5(chunk_text_str[:200].encode()).hexdigest()
+            # Generate unique ID using source file + chunk index + text hash
+            chunk_idx = len(chunks)
+            chunk_id = hashlib.md5(f"{source_file}_{chunk_idx}_{chunk_text_str[:200]}".encode()).hexdigest()
 
             chunks.append({
                 "id": chunk_id,
@@ -112,7 +117,9 @@ def chunk_text(
     # Final chunk
     if current_sentences and current_word_count >= 20:
         chunk_text_str = ' '.join(current_sentences)
-        chunk_id = hashlib.md5(chunk_text_str[:200].encode()).hexdigest()
+        # Generate unique ID using source file + chunk index + text hash
+        chunk_idx = len(chunks)
+        chunk_id = hashlib.md5(f"{source_file}_{chunk_idx}_{chunk_text_str[:200]}".encode()).hexdigest()
         chunks.append({
             "id": chunk_id,
             "text": chunk_text_str,
@@ -243,9 +250,10 @@ def run_full_ingestion():
         logger.error(f"Archive path not found: {ARCHIVE_PATH}")
         return
 
-    pdf_files = sorted(
+    # Use set to avoid duplicates on Windows (case-insensitive filesystem)
+    pdf_files = sorted(set(
         list(archive_path.rglob("*.PDF")) + list(archive_path.rglob("*.pdf"))
-    )
+    ))
     total_pdfs = len(pdf_files)
     logger.info(f"Found {total_pdfs} PDF files")
 

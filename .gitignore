@@ -242,3 +242,12 @@ CLAUDE.local.md
 
 # Debug/diagnostic scripts
 diagnose_*.py
+
+# Large archive folders (PDFs)
+archive/
+
+# Temporary backup folders
+src/dashboard-backup-*/
+
+# Test scripts
+test_*.py
